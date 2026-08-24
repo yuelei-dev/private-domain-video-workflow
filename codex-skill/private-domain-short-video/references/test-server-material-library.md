@@ -9,7 +9,7 @@ Use this mode when the user has not supplied footage or explicitly asks to use t
 - Read-only root: `/home/ubuntu/material-libraries/huangque-media/`
 - Production servers are never a fallback source.
 
-Authentication must come from an already configured SSH agent or SSH config. Never place a password, private key, bearer token, or copied credential in a command, Skill file, Git repository, log, or evidence package.
+Authentication uses the dedicated key at `E:\AI\配置\SSH\huangque-test-material-readonly-v2_ed25519` by default. The corresponding server authorization must use a forced read-only command with terminal, forwarding, agent, and X11 access disabled. The helper never opens a general SSH shell. Never place a password, private-key content, bearer token, or copied credential in a command, Skill file, Git repository, log, or evidence package.
 
 ## List and stage
 
@@ -25,9 +25,9 @@ Stage selected files into the current task workspace:
 python scripts/test_server_materials.py fetch --output-dir "E:\AI\工作区\当前任务\assets\source" --path "分类/素材.mp4"
 ```
 
-The helper first uses the fixed directory directly when it is running on the test server. Otherwise it uses non-interactive SSH. It rejects absolute paths, traversal, symlinks, unsupported extensions, and anything outside the fixed root. `fetch` copies from the server to the task workspace; it never writes, moves, renames, or deletes server material.
+The helper first uses the fixed directory directly when it is running on the test server. Otherwise it uses the restricted SSH protocol (`list` and `fetch` only). It rejects absolute paths, traversal, symlinks, unsupported extensions, and anything outside the fixed root. `fetch` copies from the server to the task workspace; it never writes, moves, renames, or deletes server material.
 
-If authentication is unavailable, stop with a clear SSH-agent/config blocker. Do not retry passwords and do not switch to production. If the catalog is reachable but has no suitable proof-oriented footage, request user footage instead of using unrelated web stock.
+If authentication is unavailable, stop with a clear dedicated-key blocker. Do not retry passwords and do not switch to production. If the catalog is reachable but has no suitable proof-oriented footage, request user footage instead of using unrelated web stock.
 
 ## Provenance
 

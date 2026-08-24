@@ -7,6 +7,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
@@ -15,43 +16,8 @@ import sys
 SSH_TARGET = "ubuntu@8.148.158.106"
 LIBRARY_ROOT = Path("/home/ubuntu/material-libraries/huangque-media")
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm", ".jpg", ".jpeg", ".png", ".webp"}
-SSH_OPTIONS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=10"]
-
-REMOTE_LIST = r'''
-import json
-from pathlib import Path
-import sys
-root=Path('/home/ubuntu/material-libraries/huangque-media').resolve(strict=True)
-limit=int(sys.argv[1])
-allowed={'.mp4','.mov','.m4v','.webm','.jpg','.jpeg','.png','.webp'}
-items=[]
-for path in sorted(root.rglob('*'), key=lambda p: str(p).casefold()):
-    if len(items)>=limit:
-        break
-    if path.is_symlink() or not path.is_file() or path.suffix.lower() not in allowed:
-        continue
-    resolved=path.resolve(strict=True)
-    if root not in resolved.parents:
-        continue
-    info=resolved.stat()
-    items.append({'path':resolved.relative_to(root).as_posix(),'size':info.st_size})
-print(json.dumps({'root':'huangque-media','items':items}, ensure_ascii=False))
-'''.strip()
-
-REMOTE_READ = r'''
-import base64
-from pathlib import Path
-import sys
-root=Path('/home/ubuntu/material-libraries/huangque-media').resolve(strict=True)
-relative=base64.urlsafe_b64decode(sys.argv[1].encode('ascii')).decode('utf-8')
-path=(root / relative).resolve(strict=True)
-allowed={'.mp4','.mov','.m4v','.webm','.jpg','.jpeg','.png','.webp'}
-if root not in path.parents or path.is_symlink() or not path.is_file() or path.suffix.lower() not in allowed:
-    raise SystemExit(4)
-with path.open('rb') as source:
-    while chunk:=source.read(1024*1024):
-        sys.stdout.buffer.write(chunk)
-'''.strip()
+DEFAULT_SSH_KEY = Path(r"E:\AI\配置\SSH\huangque-test-material-readonly-v2_ed25519")
+DEFAULT_KNOWN_HOSTS = Path(r"E:\AI\配置\SSH\known_hosts")
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,7 +59,7 @@ def list_local(limit: int) -> dict[str, object] | None:
 
 def list_remote(limit: int) -> dict[str, object]:
     completed = subprocess.run(
-        ["ssh", *SSH_OPTIONS, SSH_TARGET, remote_python_command(REMOTE_LIST, str(limit))],
+        ["ssh", *ssh_options(), SSH_TARGET, f"list {limit}"],
         check=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -110,8 +76,11 @@ def copy_one(relative: PurePosixPath, output_dir: Path) -> dict[str, object]:
     destination.parent.mkdir(parents=True, exist_ok=True)
     if LIBRARY_ROOT.is_dir():
         root = LIBRARY_ROOT.resolve(strict=True)
-        source = (root / Path(*relative.parts)).resolve(strict=True)
-        if root not in source.parents or source.is_symlink() or not source.is_file():
+        unresolved = root / Path(*relative.parts)
+        if path_contains_symlink(root, unresolved):
+            raise ValueError(f"symlink material is not allowed: {relative}")
+        source = unresolved.resolve(strict=True)
+        if root not in source.parents or not source.is_file():
             raise ValueError(f"material escapes or is missing from the library: {relative}")
         shutil.copy2(source, destination)
     else:
@@ -120,7 +89,7 @@ def copy_one(relative: PurePosixPath, output_dir: Path) -> dict[str, object]:
         try:
             with temporary.open("wb") as output:
                 subprocess.run(
-                    ["ssh", *SSH_OPTIONS, SSH_TARGET, remote_python_command(REMOTE_READ, encoded)],
+                    ["ssh", *ssh_options(), SSH_TARGET, f"fetch {encoded}"],
                     check=True,
                     stdout=output,
                     stderr=subprocess.PIPE,
@@ -132,15 +101,20 @@ def copy_one(relative: PurePosixPath, output_dir: Path) -> dict[str, object]:
     return {"path": str(relative), "local_path": str(destination.resolve()), "size": destination.stat().st_size, "sha256": digest}
 
 
-def remote_python_command(script: str, *arguments: str) -> str:
-    encoded_script = base64.b64encode(script.encode("utf-8")).decode("ascii")
-    safe_arguments = []
-    for argument in arguments:
-        if not argument or any(character not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=" for character in argument):
-            raise ValueError("unsafe remote helper argument")
-        safe_arguments.append(argument)
-    suffix = "".join(f" {argument}" for argument in safe_arguments)
-    return f"python3 -c \"import base64;exec(base64.b64decode('{encoded_script}'))\"{suffix}"
+def ssh_options() -> list[str]:
+    key = Path(os.environ.get("HUANGQUE_MATERIAL_SSH_KEY", DEFAULT_SSH_KEY))
+    known_hosts = Path(os.environ.get("HUANGQUE_MATERIAL_KNOWN_HOSTS", DEFAULT_KNOWN_HOSTS))
+    if not key.is_file():
+        raise FileNotFoundError("dedicated Huangque material SSH key is missing")
+    known_hosts.parent.mkdir(parents=True, exist_ok=True)
+    return [
+        "-o", "BatchMode=yes",
+        "-o", "ConnectTimeout=10",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", f"UserKnownHostsFile={known_hosts}",
+        "-i", str(key),
+    ]
 
 
 def hash_file(path: Path) -> str:
@@ -149,6 +123,15 @@ def hash_file(path: Path) -> str:
         while chunk := source.read(1024 * 1024):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def path_contains_symlink(root: Path, target: Path) -> bool:
+    cursor = root
+    for part in target.relative_to(root).parts:
+        cursor /= part
+        if cursor.is_symlink():
+            return True
+    return False
 
 
 def main() -> int:
