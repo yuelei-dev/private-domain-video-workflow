@@ -1,0 +1,8 @@
+{
+  "items": [
+    {"title":"大健康培训现场","image_url":"/demo/health.svg","source":"本地演示素材"},
+    {"title":"团队交流与分享","image_url":"/demo/community.svg","source":"本地演示素材"},
+    {"title":"女性成长社群","image_url":"/demo/women.svg","source":"本地演示素材"},
+    {"title":"品质生活方式","image_url":"/demo/lifestyle.svg","source":"本地演示素材"}
+  ]
+}

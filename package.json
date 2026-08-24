@@ -1,0 +1,15 @@
+{
+  "name": "private-domain-video-workflow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "独立的私域短视频批量策划、随机素材与 BGM 编排工作流",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

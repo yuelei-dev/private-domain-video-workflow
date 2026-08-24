@@ -1,0 +1,6 @@
+.env
+.DS_Store
+node_modules/
+npm-debug.log*
+private-domain-video-plan.json
+private-domain-video-plan.csv
