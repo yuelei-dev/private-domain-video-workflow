@@ -13,6 +13,7 @@ const supportedMaterialExtensions = new Set(['.mp4', '.mov', '.m4v', '.webm', '.
 await loadDotEnv(join(root, '.env'));
 
 const port = Number(process.env.PORT || 3000);
+const host = process.env.HOST || '127.0.0.1';
 const mime = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -46,8 +47,8 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, () => {
-  console.log(`Private-domain video workflow: http://localhost:${port}`);
+server.listen(port, host, () => {
+  console.log(`Private-domain video workflow: http://${host}:${port}`);
 });
 
 async function loadDotEnv(path) {

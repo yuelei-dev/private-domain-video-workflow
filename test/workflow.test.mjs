@@ -36,6 +36,7 @@ test('credentials stay server-side and media proxy checks allowed origins', () =
   assert.match(server, /BGM_BEARER_TOKEN/);
   assert.match(server, /allowedOrigins\.includes\(target\.origin\)/);
   assert.doesNotMatch(page, /Bearer __cookie__/);
+  assert.match(server, /process\.env\.HOST \|\| '127\.0\.0\.1'/);
 });
 
 test('Codex skill uses only the fixed test-server library and keeps credentials external', () => {
