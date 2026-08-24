@@ -12,10 +12,13 @@
 - 首帧 0.08 秒保护策略，避免封面抓到纯黑帧
 - JSON/CSV 方案导出
 - 本地演示素材
+- 测试服务器文件系统素材库只读扫描与 Range 播放
 - 远程素材与 BGM 适配层，访问令牌只保留在服务端
 - 媒体代理来源白名单，避免任意地址代理
 
 本仓库默认只生成 `planned` 状态的配置方案，不调用付费渲染接口。后续可以将导出的 JSON 交给 FFmpeg、Remotion、HyperFrames 或已有的视频渲染服务。
+
+仓库内的 `codex-skill/private-domain-short-video/` 是可安装的 Codex Skill 正本。它会在没有用户素材时先只读查询黄雀测试服务器素材库，并只把最终选中的文件暂存到当前任务工作区；SSH 凭据不进入仓库。
 
 ## 本地启动
 
@@ -26,7 +29,7 @@ cp .env.example .env
 npm start
 ```
 
-打开 `http://localhost:3000`。未配置远程接口时，会自动使用 `data/assets.json` 中的四张演示素材。
+打开 `http://localhost:3000`。未配置远程接口时，服务端优先只读扫描 `MATERIAL_LIBRARY_ROOT`；该目录不存在或没有支持的素材时，才使用 `data/assets.json` 中的四张演示素材。
 
 Windows PowerShell：
 
@@ -36,6 +39,17 @@ npm start
 ```
 
 ## 接入服务器素材库
+
+部署到黄雀测试服务器时使用固定只读目录（生产服务器不在本工作流范围内）：
+
+```dotenv
+MATERIAL_LIBRARY_ROOT=/home/ubuntu/material-libraries/huangque-media
+MATERIAL_LIBRARY_LIMIT=500
+```
+
+服务端递归读取 MP4/MOV/M4V/WebM/JPG/PNG/WebP，忽略符号链接，通过受控 `/api/library-media` 路由提供媒体并支持 HTTP Range。浏览器不会获得服务器绝对路径，工作流不会写入、移动或删除素材库文件。
+
+若已有专用 HTTP 素材接口，可用以下配置覆盖文件系统模式：
 
 编辑 `.env`：
 
