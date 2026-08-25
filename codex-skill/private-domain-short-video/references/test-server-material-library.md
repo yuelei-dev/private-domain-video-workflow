@@ -19,13 +19,13 @@ List the catalog without copying files:
 python scripts/test_server_materials.py list --limit 300
 ```
 
-Stage selected files into the current task workspace:
+Stage selected visual files and BGM into the current task workspace:
 
 ```powershell
 python scripts/test_server_materials.py fetch --output-dir "E:\AI\工作区\当前任务\assets\source" --path "分类/素材.mp4"
 ```
 
-The helper first uses the fixed directory directly when it is running on the test server. Otherwise it uses the restricted SSH protocol (`list` and `fetch` only). It rejects absolute paths, traversal, symlinks, unsupported extensions, and anything outside the fixed root. `fetch` copies from the server to the task workspace; it never writes, moves, renames, or deletes server material.
+The helper first uses the fixed directory directly when it is running on the test server. Otherwise it uses the restricted SSH protocol (`list` and `fetch` only). Supported BGM types include MP3, M4A, WAV, AAC, FLAC, and OGG. It rejects absolute paths, traversal, symlinks, unsupported extensions, and anything outside the fixed root. `fetch` copies from the server to the task workspace; it never writes, moves, renames, or deletes server material.
 
 If authentication is unavailable, stop with a clear dedicated-key blocker. Do not retry passwords and do not switch to production. If the catalog is reachable but has no suitable proof-oriented footage, request user footage instead of using unrelated web stock.
 

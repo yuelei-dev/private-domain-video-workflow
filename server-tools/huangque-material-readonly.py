@@ -10,7 +10,11 @@ from pathlib import Path, PurePosixPath
 import sys
 
 ROOT = Path("/home/ubuntu/material-libraries/huangque-media")
-ALLOWED_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm", ".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_EXTENSIONS = {
+    ".mp4", ".mov", ".m4v", ".webm",
+    ".jpg", ".jpeg", ".png", ".webp",
+    ".mp3", ".m4a", ".wav", ".aac", ".flac", ".ogg",
+}
 
 
 def safe_file(encoded: str) -> tuple[Path, str]:

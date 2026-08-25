@@ -16,5 +16,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm test
-      - run: node --check server.mjs
+      - name: Validate fixed-library BGM, keyword emphasis, and first-frame contract
+        run: npm test
+      - name: Validate Node entrypoint
+        run: node --check server.mjs
+      - name: Validate Python material helpers
+        run: python -m py_compile codex-skill/private-domain-short-video/scripts/*.py server-tools/*.py

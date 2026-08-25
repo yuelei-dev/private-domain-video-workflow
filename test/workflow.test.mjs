@@ -15,13 +15,25 @@ const materialHelper = await readFile(new URL('../codex-skill/private-domain-sho
 test('page preserves four layouts and first-frame protection', () => {
   for (const label of ['数据对比·高转化', '同城圈层·招募', '女性成长·温暖', '品质社交·轻奢']) assert.match(page, new RegExp(label));
   assert.match(page, /首帧保护/);
-  assert.match(page, /first_frame_offset_seconds:\.08/);
+  assert.doesNotMatch(page, /first_frame_offset_seconds:\.08/);
+  assert.match(page, /first_frame_policy:'image-from-frame-zero'/);
+  assert.match(page, /first_frame_offset_seconds:0/);
+  assert.match(page, /selected\.find\(function\(value\)\{return !!value\.image_url;/);
 });
 
 test('random selection uses Fisher-Yates and caps a batch at four assets', () => {
   assert.match(page, /Math\.floor\(Math\.random\(\)\*\(i\+1\)\)/);
   assert.match(page, /slice\(0,Math\.min\(4,allAssets\.length\)\)/);
   assert.doesNotMatch(page, /sort\(function\(\)\{return Math\.random/);
+});
+
+test('batch plans require keyword enlargement and unique test-library BGM', () => {
+  assert.match(page, /emphasisKeywords\(copy\)/);
+  assert.match(page, /keyword_scale:1\.28/);
+  assert.match(page, /bgmPool=shuffle\(bgms\)/);
+  assert.match(page, /bgmPool\.length<list\.length/);
+  assert.match(page, /library_path:track\.library_path/);
+  assert.doesNotMatch(page, /generate_bgm/);
 });
 
 test('plans are exportable but do not submit render jobs', () => {
@@ -33,7 +45,9 @@ test('plans are exportable but do not submit render jobs', () => {
 
 test('credentials stay server-side and media proxy checks allowed origins', () => {
   assert.match(server, /MATERIAL_BEARER_TOKEN/);
-  assert.match(server, /BGM_BEARER_TOKEN/);
+  assert.match(server, /bgmExtensions/);
+  assert.match(server, /MATERIAL_LIBRARY_ROOT/);
+  assert.doesNotMatch(server, /BGM_BEARER_TOKEN/);
   assert.match(server, /allowedOrigins\.includes\(target\.origin\)/);
   assert.doesNotMatch(page, /Bearer __cookie__/);
   assert.match(server, /process\.env\.HOST \|\| '127\.0\.0\.1'/);
@@ -41,6 +55,9 @@ test('credentials stay server-side and media proxy checks allowed origins', () =
 
 test('Codex skill uses only the fixed test-server library and keeps credentials external', () => {
   assert.match(skill, /\/home\/ubuntu\/material-libraries\/huangque-media/);
+  assert.match(skill, /Randomly select BGM only from the fixed Huangque test-server material library/);
+  assert.match(skill, /Start with a still image visible from frame zero/);
+  assert.match(skill, /1\.18-1\.35 times the surrounding text/);
   assert.match(materialHelper, /ubuntu@8\.148\.158\.106/);
   assert.match(materialHelper, /BatchMode=yes/);
   assert.match(materialHelper, /ssh-read-only/);
@@ -53,6 +70,7 @@ test('test-server material library is read-only, contained, and range-capable', 
   await mkdir(join(fixtureRoot, 'health'), { recursive: true });
   await writeFile(join(fixtureRoot, 'health', 'proof.mp4'), Buffer.from('0123456789'));
   await writeFile(join(fixtureRoot, 'health', 'cover.jpg'), Buffer.from('image'));
+  await writeFile(join(fixtureRoot, 'health', 'energy.mp3'), Buffer.from('music'));
   await writeFile(join(fixtureRoot, 'ignore.txt'), 'not media');
   const port = await freePort();
   const child = spawn(process.execPath, [fileURLToPath(new URL('../server.mjs', import.meta.url))], {
@@ -82,6 +100,18 @@ test('test-server material library is read-only, contained, and range-capable', 
   assert.equal(mediaResponse.status, 206);
   assert.equal(await mediaResponse.text(), '2345');
   assert.equal(mediaResponse.headers.get('content-range'), 'bytes 2-5/10');
+
+  const bgmResponse = await fetch(`http://127.0.0.1:${port}/api/bgm`);
+  assert.equal(bgmResponse.status, 200);
+  const bgmCatalog = await bgmResponse.json();
+  assert.equal(bgmCatalog.mode, 'server-library');
+  assert.equal(bgmCatalog.tracks.length, 1);
+  assert.equal(bgmCatalog.tracks[0].library_path, 'health/energy.mp3');
+  assert.match(bgmCatalog.tracks[0].url, /^\/api\/library-media\?path=/);
+
+  const bgmMedia = await fetch(`http://127.0.0.1:${port}${bgmCatalog.tracks[0].url}`);
+  assert.equal(bgmMedia.status, 200);
+  assert.equal(await bgmMedia.text(), 'music');
 
   const traversal = await fetch(`http://127.0.0.1:${port}/api/library-media?path=${encodeURIComponent('../secret.mp4')}`);
   assert.equal(traversal.status, 400);

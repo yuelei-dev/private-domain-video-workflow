@@ -29,6 +29,7 @@ For native vertical footage, allow the picture to fill the canvas and place text
 - Normal line: 66-84 px.
 - Hero statistic: 104-150 px.
 - CTA: 74-104 px.
+- Emphasis keywords or figures: 1.18-1.35 times the surrounding line size; limit to 1-3 exact terms per video.
 - Weight: 800-900.
 - Outline: 6-9 px black stroke at 1080 width, supplemented by a compact shadow.
 - Palette: white for connective text, yellow for primary value, red for comparison or urgency.
@@ -44,6 +45,8 @@ Use color to express hierarchy, not to color every word. One primary highlight a
 - Avoid looping bounce, large rotation, excessive glow, and word-by-word subtitle motion.
 
 ## Shot changes
+
+- Frame zero must already display image A at full intended brightness; do not use a fade from black or wait for video decoding before the first visible picture.
 
 - Typical 8-second cut points: 0.0, 1.5, 3.1, 4.7, 6.3, 8.2 seconds.
 - Hard cuts are the default. A 4-8 frame opacity crossfade is acceptable when footage exposure changes sharply.

@@ -8,7 +8,10 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 const publicRoot = resolve(root, 'public');
 const dataRoot = resolve(root, 'data');
 const defaultMaterialLibraryRoot = '/home/ubuntu/material-libraries/huangque-media';
-const supportedMaterialExtensions = new Set(['.mp4', '.mov', '.m4v', '.webm', '.jpg', '.jpeg', '.png', '.webp']);
+const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const videoExtensions = new Set(['.mp4', '.mov', '.m4v', '.webm']);
+const bgmExtensions = new Set(['.mp3', '.m4a', '.wav', '.aac', '.flac', '.ogg']);
+const supportedLibraryExtensions = new Set([...imageExtensions, ...videoExtensions, ...bgmExtensions]);
 
 await loadDotEnv(join(root, '.env'));
 
@@ -29,7 +32,11 @@ const mime = {
   '.m4v': 'video/x-m4v',
   '.webm': 'video/webm',
   '.mp3': 'audio/mpeg',
-  '.m4a': 'audio/mp4'
+  '.m4a': 'audio/mp4',
+  '.wav': 'audio/wav',
+  '.aac': 'audio/aac',
+  '.flac': 'audio/flac',
+  '.ogg': 'audio/ogg'
 };
 
 const server = createServer(async (request, response) => {
@@ -71,9 +78,8 @@ function sourceConfig(kind) {
     local: join(dataRoot, 'assets.json')
   };
   return {
-    catalog: process.env.BGM_MANIFEST_URL,
-    fileBase: process.env.BGM_FILE_BASE_URL,
-    token: process.env.BGM_BEARER_TOKEN,
+    libraryRoot: resolve(process.env.MATERIAL_LIBRARY_ROOT || defaultMaterialLibraryRoot),
+    libraryLimit: positiveInteger(process.env.MATERIAL_LIBRARY_LIMIT, 500),
     local: join(dataRoot, 'bgm.json')
   };
 }
@@ -81,9 +87,10 @@ function sourceConfig(kind) {
 async function serveCatalog(response, kind) {
   const config = sourceConfig(kind);
   if (!config.catalog) {
-    if (kind === 'asset') {
-      const library = await scanMaterialLibrary(config.libraryRoot, config.libraryLimit);
-      if (library.available) return json(response, 200, { items: library.items, mode: 'server-library' });
+    const library = await scanMaterialLibrary(config.libraryRoot, config.libraryLimit, kind);
+    if (library.available) {
+      if (kind === 'asset') return json(response, 200, { items: library.items, mode: 'server-library' });
+      return json(response, 200, { tracks: library.items, mode: 'server-library' });
     }
     const local = JSON.parse(await readFile(config.local, 'utf8'));
     return json(response, 200, { ...local, mode: 'local' });
@@ -99,7 +106,7 @@ async function serveCatalog(response, kind) {
   return json(response, 200, { tracks: tracks.map(track => normalizeTrack(track, config)), mode: 'remote' });
 }
 
-async function scanMaterialLibrary(libraryRoot, limit) {
+async function scanMaterialLibrary(libraryRoot, limit, kind) {
   let canonicalRoot;
   try { canonicalRoot = await realpath(libraryRoot); } catch { return { available: false, items: [] }; }
   const files = [];
@@ -114,7 +121,9 @@ async function scanMaterialLibrary(libraryRoot, limit) {
       if (entry.isSymbolicLink()) continue;
       const childRelative = relativeDirectory ? join(relativeDirectory, entry.name) : entry.name;
       if (entry.isDirectory()) pending.push(childRelative);
-      if (!entry.isFile() || !supportedMaterialExtensions.has(extname(entry.name).toLowerCase())) continue;
+      const extension = extname(entry.name).toLowerCase();
+      const allowed = kind === 'bgm' ? bgmExtensions : new Set([...imageExtensions, ...videoExtensions]);
+      if (!entry.isFile() || !allowed.has(extension)) continue;
       const publicPath = childRelative.split(sep).join('/');
       const mediaUrl = `/api/library-media?path=${encodeURIComponent(publicPath)}`;
       const item = {
@@ -122,7 +131,8 @@ async function scanMaterialLibrary(libraryRoot, limit) {
         library_path: publicPath,
         source: '黄雀测试服务器素材库'
       };
-      if (['.jpg', '.jpeg', '.png', '.webp'].includes(extname(entry.name).toLowerCase())) item.image_url = mediaUrl;
+      if (kind === 'bgm') item.url = mediaUrl;
+      else if (imageExtensions.has(extension)) item.image_url = mediaUrl;
       else item.video_url = mediaUrl;
       files.push(item);
       if (files.length >= limit) break;
@@ -143,7 +153,7 @@ async function serveLibraryMedia(request, response, params) {
   } catch {
     return json(response, 404, { error: 'Material not found' });
   }
-  if (!isContained(canonicalRoot, target) || !supportedMaterialExtensions.has(extname(target).toLowerCase())) {
+  if (!isContained(canonicalRoot, target) || !supportedLibraryExtensions.has(extname(target).toLowerCase())) {
     return json(response, 403, { error: 'Material is outside the library' });
   }
   const info = await stat(target);

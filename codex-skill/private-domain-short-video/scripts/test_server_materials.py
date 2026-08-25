@@ -15,7 +15,11 @@ import sys
 
 SSH_TARGET = "ubuntu@8.148.158.106"
 LIBRARY_ROOT = Path("/home/ubuntu/material-libraries/huangque-media")
-ALLOWED_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm", ".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_EXTENSIONS = {
+    ".mp4", ".mov", ".m4v", ".webm",
+    ".jpg", ".jpeg", ".png", ".webp",
+    ".mp3", ".m4a", ".wav", ".aac", ".flac", ".ogg",
+}
 DEFAULT_SSH_KEY = Path(r"E:\AI\配置\SSH\huangque-test-material-readonly-v2_ed25519")
 DEFAULT_KNOWN_HOSTS = Path(r"E:\AI\配置\SSH\known_hosts")
 
