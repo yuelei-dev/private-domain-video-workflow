@@ -10,7 +10,7 @@ Choose music from the emotional job of the footage:
 | Business/meeting/opportunity | 88-105 | Clear beat, confident bass, clean plucks |
 | Premium/luxury/social circle | 84-100 | Restrained groove, polished synth or piano |
 
-Avoid vocals and dense lead melodies because the viewer is already reading. For this workflow, randomly select only authorized BGM under `/home/ubuntu/material-libraries/huangque-media/`. Do not generate replacement music or substitute another local or web source. In a batch, shuffle once and assign without replacement while enough tracks remain.
+Avoid vocals and dense lead melodies because the viewer is already reading. For this workflow, randomly select only authorized BGM stored under the Huangque test-server library `/home/ubuntu/material-libraries/huangque-media/`. Do not generate replacement music or substitute another local or web source. For batches, shuffle once and assign without replacement while enough library tracks remain.
 
 ## Mix
 
